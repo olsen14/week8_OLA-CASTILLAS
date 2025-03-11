@@ -1,0 +1,68 @@
+<?php
+require 'vendor/autoload.php'; // Install Faker using Composer: composer require fakerphp/faker
+
+$faker = Faker\Factory::create('en_PH'); // Philippine locale
+$pdo = new PDO("mysql:host=localhost;dbname=your_database", "your_username", "your_password");
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+// Generate Office Data (50 rows)
+$offices = [];
+for ($i = 0; $i < 50; $i++) {
+    $offices[] = [
+        'id' => $i + 1,
+        'name' => $faker->company,
+        'contactnumber' => $faker->phoneNumber,
+        'email' => $faker->companyEmail,
+        'address' => $faker->address,
+        'city' => $faker->city,
+        'country' => 'Philippines',
+        'postal' => $faker->postcode
+    ];
+}
+
+// Insert Office Data
+$stmt = $pdo->prepare("INSERT INTO office (id, name, contactnumber, email, address, city, country, postal) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+foreach ($offices as $office) {
+    $stmt->execute(array_values($office));
+}
+
+// Generate Employee Data (200 rows)
+$employees = [];
+for ($i = 0; $i < 200; $i++) {
+    $employees[] = [
+        'id' => $i + 1,
+        'lastname' => $faker->lastName,
+        'firstname' => $faker->firstName,
+        'office_id' => $faker->randomElement(array_column($offices, 'id')), // Random FK
+        'address' => $faker->address
+    ];
+}
+
+// Insert Employee Data
+$stmt = $pdo->prepare("INSERT INTO employee (id, lastname, firstname, office_id, address) VALUES (?, ?, ?, ?, ?)");
+foreach ($employees as $employee) {
+    $stmt->execute(array_values($employee));
+}
+
+// Generate Transaction Data (500 rows)
+$transactions = [];
+for ($i = 0; $i < 500; $i++) {
+    $transactions[] = [
+        'id' => $i + 1,
+        'employee_id' => $faker->randomElement(array_column($employees, 'id')), // Random FK
+        'office_id' => $faker->randomElement(array_column($offices, 'id')), // Random FK
+        'datelog' => $faker->dateTimeBetween('-5 years', 'now')->format('Y-m-d'), // No future dates
+        'action' => $faker->word,
+        'remarks' => $faker->sentence,
+        'documentcode' => strtoupper($faker->bothify('DOC-####-??'))
+    ];
+}
+
+// Insert Transaction Data
+$stmt = $pdo->prepare("INSERT INTO transaction (id, employee_id, office_id, datelog, action, remarks, documentcode) VALUES (?, ?, ?, ?, ?, ?, ?)");
+foreach ($transactions as $transaction) {
+    $stmt->execute(array_values($transaction));
+}
+
+echo "Fake data inserted successfully!";
+?>
